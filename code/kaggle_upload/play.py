@@ -7,7 +7,7 @@ from halite_env import HaliteEnv
 from ship_state_wrapper import ShipStateWrapper
 from shipyard_state_wrapper import ShipYardStateWrapper
 from agent import Agent
-from game_runner import GameRunner
+from game_runner_v2 import GameRunner
 
 
 # https://www.kaggle.com/garethjns/deep-q-learner-starter-code#Play-single-episode
@@ -57,6 +57,7 @@ def play_games(episodes, max_steps):
     print("Initialized trainer")
 
     halite_env = HaliteEnv(
+        environment=env,
         opponents=3,
         ship_state_wrapper=ship_state_wrapper,
         shipyard_state_wrapper=shipyard_state_wrapper,
@@ -79,7 +80,11 @@ def play_games(episodes, max_steps):
         scores = game.play_episode(max_steps)
         all_scores.append(scores)
 
-    return all_scores
+    return {
+        'all_scores': all_scores,
+        'ship_agent': ship_agent,
+        'shipyard_agent': shipyard_agent
+    }
 
 
 def train_agent(episodes=20, steps_per_episode=50):

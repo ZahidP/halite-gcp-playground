@@ -90,8 +90,8 @@ class Agent(object):
     def get_action(
             self,
             state,
-            game=0,
-            step=0,
+            game,
+            step,
             verbose=True
     ):
         """

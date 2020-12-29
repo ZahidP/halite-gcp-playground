@@ -8,13 +8,12 @@ from ship_reward_functions import \
     convert_state_to_reward, \
     multi_frame_convert_state_to_collector_ship_reward
 
-from kaggle_environments import make
-
 
 class HaliteEnv:
     def __init__(self, opponents,
                  shipyard_state_wrapper: ShipYardStateWrapper,
                  ship_state_wrapper: ShipStateWrapper,
+                 environment,
                  replay_save_dir='',
                  agent_count=1,
                  radius=5,
@@ -24,17 +23,21 @@ class HaliteEnv:
         self.shipyard_state_wrapper = shipyard_state_wrapper
         self.ship_state_wrapper = ship_state_wrapper
 
-        self.environment = make('halite', configuration)
-        self.trainer = trainer if trainer else self.environment.train([None, *opponents])
-        self.environment.reset(agent_count)
+        self.environment = environment
+        self.trainer = trainer
+        if environment and not trainer:
+            self.trainer = self.environment.train([None, *opponents])
+        if environment:
+            self.environment.reset(agent_count)
+            self.state = self.environment.state[0]
         self.replay_save_dir = replay_save_dir
-        self.state = self.environment.state[0]
         self.observation = None
         self.radius = radius
         self.episode = 0
         self.step_number = 0
 
-    def update_observation_for_ship(self, board: Board, uid, action):
+    @staticmethod
+    def update_observation_for_ship(board: Board, uid, action):
         """Simulate environment step forward and update observation
         https://www.kaggle.com/sam/halite-sdk-overview#Simulating-Actions-(Lookahead)
         """
@@ -43,7 +46,8 @@ class HaliteEnv:
         ret_val = board.next()
         return Observation(ret_val.observation)
 
-    def update_observation_for_shipyard(self, board: Board, uid, action):
+    @staticmethod
+    def update_observation_for_shipyard(board: Board, uid, action):
         """Simulate environment step forward and update observation
         https://www.kaggle.com/sam/halite-sdk-overview#Simulating-Actions-(Lookahead)
         """

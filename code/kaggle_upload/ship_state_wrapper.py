@@ -22,6 +22,9 @@ class ShipStateWrapper:
         self.cached_ships_map, self.cached_shipyards_map = None, None
         self.state_size = ((2 * radius + 1) ** 2) * 3
 
+    def set_map_size(self, map_size):
+        self.MAP_SIZE = map_size
+
     def reset(self):
         self.frame_history = {}
 
