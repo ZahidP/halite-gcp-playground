@@ -7,10 +7,79 @@ from halite_env import HaliteEnv
 from ship_state_wrapper import ShipStateWrapper
 from shipyard_state_wrapper import ShipYardStateWrapper
 from agent import Agent
+from game_runner import GameRunner
 
 
 # https://www.kaggle.com/garethjns/deep-q-learner-starter-code#Play-single-episode
 # https://www.kaggle.com/hsperr/halite-iv-dqn-example-pytorch
+# https://www.kaggle.com/superant/halite-super-boilerbot
+
+def play_games(episodes, max_steps):
+    env = make("halite", debug=True)
+    # env.run(["random"])
+    # env.render(mode="ipython", width=800, height=600)
+
+    print('configuration')
+    print(env.configuration)
+
+    ship_frame_stack_len = 2
+
+    ship_state_wrapper = ShipStateWrapper(
+        radius=4,
+        max_frames=ship_frame_stack_len,
+        map_size=int(env.configuration['size'])
+    )
+
+    shipyard_state_wrapper = ShipYardStateWrapper(
+        radius=4,
+        max_frames=1,
+        map_size=int(env.configuration['size'])
+    )
+
+    print(env.configuration)
+
+    print("Initialized state wrappers")
+
+    ship_agent = Agent(
+        alpha=0.99, gamma=0.5, n_actions=6,
+        batch_size=32, epsilon=.9, input_dims=ship_state_wrapper.state_size * ship_frame_stack_len
+    )
+
+    shipyard_agent = Agent(
+        alpha=0.99, gamma=0.5, n_actions=2,
+        batch_size=32, epsilon=.9, input_dims=shipyard_state_wrapper.state_size
+    )
+
+    print("Initialized agents")
+
+    trainer = env.train([None, "random", "random", "random"])
+
+    print("Initialized trainer")
+
+    halite_env = HaliteEnv(
+        opponents=3,
+        ship_state_wrapper=ship_state_wrapper,
+        shipyard_state_wrapper=shipyard_state_wrapper,
+        radius=4,
+        trainer=trainer
+    )
+
+    game = GameRunner(
+        configuration=env.configuration,
+        env=halite_env,
+        ship_agent=ship_agent,
+        shipyard_agent=shipyard_agent,
+        training=True,
+        ship_frame_stack_len=ship_frame_stack_len,
+        handicap=0
+    )
+
+    all_scores = []
+    for episode in range(episodes):
+        scores = game.play_episode(max_steps)
+        all_scores.append(scores)
+
+    return all_scores
 
 
 def train_agent(episodes=20, steps_per_episode=50):
@@ -156,14 +225,16 @@ def play_episode(
             prev_obs = observation
             obs_next = env.update_observation_for_shipyard(board, shipyard_id, halite_action)
 
-            reward = env.get_shipyard_count_reward(
+            reward = env.get_shipyard_reward(
                 obs_next,
                 env.wrap_observation_for_ship_agent(
                     obs=obs_next,
                     player=obs_next.player,
                     spos=pos,  # because shipyards can't move
                     uid=shipyard_id
-                )
+                ),
+                uid=shipyard_id,
+                done=done
             )
 
             episode_rewards.append(reward)
@@ -198,7 +269,6 @@ def play_episode(
                       f"reward received {reward}")
             # update current observation with the simulated step ahead
             raw_observation = obs_next
-            observation = Observation(raw_observation)
 
         """
         ====================================
@@ -270,7 +340,8 @@ def play_episode(
                     spos=pos,  # because shipyards can't move
                     uid=ship_id
                 ),
-                ship_id
+                ship_id,
+                done=done
             )
 
             episode_rewards.append(reward)
@@ -350,7 +421,8 @@ def play_episode(
                 ship_reward = env.get_collector_ship_reward(
                     observation=observation,
                     converted_observation=converted_next_obs,
-                    uid=ship_id
+                    uid=ship_id,
+                    done=done
                 )
                 next_state_vector = converted_next_obs.flatten()
                 ship_agent.remember(state=s, action=a,

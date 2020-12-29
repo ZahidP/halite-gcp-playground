@@ -37,7 +37,7 @@ class Agent(object):
                  epsilon_dec=0.985,
                  epsilon_end=0.05,
                  win_reward=5,
-                 replace=None,
+                 replace=20,
                  fc1_dims=16,
                  fc2_dims=16,
                  mem_size=100_000,
@@ -90,8 +90,8 @@ class Agent(object):
     def get_action(
             self,
             state,
-            game=0,
-            step=0,
+            game,
+            step,
             verbose=True
     ):
         """
@@ -125,7 +125,7 @@ class Agent(object):
 
             self.chose_random = False
 
-            if verbose and ((game % 50) == 0) or (game == 0):
+            if verbose and ((game % 50) == 0):
                 print(f'Game: {game}, Step: {step}')
                 print('action values')
                 print(action_values)
@@ -185,7 +185,7 @@ class Agent(object):
 
         try:
             q_network[batch_index, action] = reward + \
-                                                 self.gamma * np.max(q_next, axis=1) * (1 - done)
+                                             self.gamma * np.max(q_next, axis=1) * (1 - done)
         except IndexError as e:
             print('Q NETWORK')
             print(q_network.shape)

@@ -20,37 +20,6 @@ class ShipYardStateWrapper:
         self.cached_ships_map, self.cached_shipyards_map = None, None
         self.state_size = ((2 * radius + 1) ** 2) * 3 + 1
 
-    def convert_state_to_shipyard_ship_count_reward(self, observation, converted_observation):
-
-        ship_state: np.ndarray = converted_observation[:, :, 1]
-        friendly_ship_mask = ship_state[ship_state > 0]
-        enemy_ship_mask = ship_state[ship_state < 0]
-        friendly_ships = sum(friendly_ship_mask)
-        enemy_ships = sum(enemy_ship_mask)
-        # 3 ships in a 5x5 area seems like overkill
-        if friendly_ships > 2:
-            return -1
-        return friendly_ships - enemy_ships
-
-    def convert_state_to_reward(self, observation: Observation, converted_observation) -> float:
-
-        player_halite = observation.players[observation.player][0]
-
-        opponent_halites = [item[0] for item in observation.players[observation.player:]]
-
-        best_opponent_halite = sorted(opponent_halites, reverse=True)[0]
-
-        ship_state: np.ndarray = converted_observation[:, :, 0]
-        shipyard_state: np.ndarray = converted_observation[:, :, 1]
-
-        # basically, my ships minus their ships
-        ship_rewards = ship_state.sum()
-        # basically, my shipyards minus their shipyards
-        shipyard_rewards = shipyard_state.sum()
-
-        extra_rewards = (ship_rewards / 3) + (shipyard_rewards * 10)
-        return (player_halite - best_opponent_halite)
-
     def update_state(self, obs):
         self.obs = deepcopy(obs)
         self.phalite, self.shipyards, self.ships = obs.players[obs.player]

@@ -3,6 +3,11 @@ from kaggle_environments.envs.halite.helpers import Board, ShipAction, ShipyardA
 from ship_state_wrapper import ShipStateWrapper
 from shipyard_state_wrapper import ShipYardStateWrapper
 
+from ship_reward_functions import \
+    multi_frame_win_loss_ship_reward, \
+    convert_state_to_reward, \
+    multi_frame_convert_state_to_collector_ship_reward
+
 from kaggle_environments import make
 
 
@@ -77,23 +82,19 @@ class HaliteEnv:
     def convert_shipyard_action_to_halite_enum(self, action, uid, obs):
         return self.shipyard_state_wrapper.convert_action_to_enum(action=action, uid=uid, obs=obs)
 
-    def get_ship_reward(self, observation, converted_observation) -> float:
-        return self.ship_state_wrapper.convert_state_to_reward(observation, converted_observation)
+    def get_ship_reward(self, observation, converted_observation, uid, done) -> float:
+        return convert_state_to_reward(observation, converted_observation)
 
-    def get_shipyard_reward(self, observation, converted_observation) -> float:
+    def get_shipyard_reward(self, observation, converted_observation, uid, done) -> float:
         return self.shipyard_state_wrapper.convert_state_to_reward(observation, converted_observation)
 
-    def get_collector_ship_reward(self, observation, converted_observation, uid) -> float:
-        return self.ship_state_wrapper.convert_state_to_collector_ship_reward(
-            observation, converted_observation, uid
+    def get_multiframe_ship_reward(self, observation, converted_observation, uid, done) -> float:
+        return multi_frame_win_loss_ship_reward(
+            observation, converted_observation, uid, done
         )
 
-    def get_destroyer_ship_reward(self, observation, converted_observation) -> float:
-        return self.ship_state_wrapper.convert_state_to_destroyer_ship_reward(
-            observation, converted_observation
-        )
+    def get_multiframe_ship_observation(self, uid) -> list:
+        return self.ship_state_wrapper.get_basic_state_history(uid=uid)
 
-    def get_shipyard_count_reward(self, observation, converted_observation) -> float:
-        return self.shipyard_state_wrapper.convert_state_to_shipyard_ship_count_reward(
-            observation, converted_observation
-        )
+    def get_multiframe_shipyard_observation(self, uid) -> list:
+        return self.ship_state_wrapper.get_basic_state_history(uid=uid)
