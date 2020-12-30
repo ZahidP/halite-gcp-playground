@@ -8,7 +8,7 @@ from dense_nn import DenseNN
 from kaggle_environments.envs.halite.helpers import Board, ShipAction, ShipyardAction, Observation
 
 
-def build_dqn(lr, n_actions, input_dims, fc1_dims):
+def build_conv_dqn(lr, n_actions, input_dims, fc1_dims):
     model = Sequential()
     model.add(Conv2D(filters=32, kernel_size=8, strides=4, activation='relu',
                      input_shape=(*input_dims,), data_format='channels_first'))
@@ -21,6 +21,22 @@ def build_dqn(lr, n_actions, input_dims, fc1_dims):
     model.add(Dense(n_actions))
 
     model.compile(optimizer=Adam(lr=lr), loss='mean_squared_error')
+
+    return model
+
+
+def build_dense_dqn(lr, n_actions, input_dims, fc1_dims, fc2_dims, fc3_dims=8):
+    model = keras.Sequential(
+        [keras.layers.Dense(fc1_dims, input_shape=(input_dims,)),
+         keras.layers.Activation('relu'),
+         keras.layers.Dense(fc2_dims),
+         keras.layers.Activation('relu'),
+         keras.layers.Dense(fc3_dims),
+         keras.layers.Activation('relu'),
+         keras.layers.Dense(n_actions)]
+    )
+
+    model.compile(optimizer=keras.optimizers.Adam(lr=lr), loss='mse')
 
     return model
 
@@ -43,7 +59,8 @@ class Agent(object):
                  mem_size=100_000,
                  fname='dqn_model.h5',
                  verbose=False,
-                 agent_type='default'
+                 agent_type='default',
+                 nnet_type='dense'
                  ):
         """
         gamma: discount factor
@@ -67,17 +84,17 @@ class Agent(object):
         self.chose_random = False
         self.agent_type = agent_type
 
-        dense_nn = DenseNN(
-            n_actions=n_actions,
-            unit_scale=2,
-            observation_shape=input_dims
-        )
-
-        self.q_online = dense_nn.compile('q_online', 'mse')
-        self.q_offline = dense_nn.compile('q_offline', 'mse')
-
-        # self.q_online = build_dqn(alpha, n_actions, input_dims, fc1_dims, fc2_dims)
-        # self.q_offline = build_dqn(alpha, n_actions, input_dims, fc1_dims, fc2_dims)
+        if nnet_type == 'dense':
+            dense_nn = DenseNN(
+                n_actions=n_actions,
+                unit_scale=2,
+                observation_shape=input_dims
+            )
+            self.q_online = dense_nn.compile('q_online', 'mse')
+            self.q_offline = dense_nn.compile('q_offline', 'mse')
+        else:
+            self.q_online = build_conv_dqn(alpha, fc1_dims=fc1_dims, input_dims=input_dims, n_actions=n_actions)
+            self.q_offline = build_conv_dqn(alpha, fc1_dims=fc1_dims, input_dims=input_dims, n_actions=n_actions)
 
     def remember(self, state, action, reward, new_state, done):
         self.memory.store_transition(state, action, reward, new_state, done)

@@ -2,9 +2,6 @@ from tensorflow import keras
 from typing import List, Union, Tuple, Callable
 
 
-# import matplotlib.pyplot as plt
-
-
 class DenseNN:
 
     def __init__(self, observation_shape: int, n_actions: int,

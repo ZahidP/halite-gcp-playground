@@ -36,6 +36,7 @@ class HaliteAgent:
         self.ship_frame_stack_len = ship_frame_stack_len
         self.shipyard_frame_stack_len = shipyard_frame_stack_len
         self.actions_for_step = {}
+        self.remaining = {}
 
     def __call__(
         self, observation: Dict[str, Any], configuration: Dict[str, Any]
@@ -87,6 +88,8 @@ class HaliteAgent:
             - and potentially the current epsilon value
         as a part of the state.
         """
+        remaining = len(ship_simulated_step_memory)
+
         for ship_id, val in ship_simulated_step_memory.items():
             s = val['state']
             a = val['action']
@@ -102,9 +105,13 @@ class HaliteAgent:
                 converted_next_obs = env.wrap_observation_for_ship_agent(
                     obs=Observation(observation),
                     player=observation['player'],
+                    remaining=remaining,
+                    turn=step_number,
                     spos=int(pos),
                     uid=ship_id
                 )
+
+                remaining -= 1
 
                 if self.ship_frame_stack_len > 1:
                     multiframe_state = self.env.get_multiframe_ship_observation(ship_id)
@@ -246,8 +253,9 @@ class HaliteAgent:
             step_observation,
             raw_observation,
             episode_number,
-            step_number
+            step_number,
     ):
+        remaining = len(step_observation.players[step_observation.player][2])
         ship_simulated_step_memory = {}
         for ship_id, (pos, halite) in step_observation.players[step_observation.player][2].items():
             # modifies ship_simulated_step_memory
@@ -258,8 +266,10 @@ class HaliteAgent:
                 raw_observation=raw_observation,
                 ship_simulated_step_memory=ship_simulated_step_memory,
                 episode_number=episode_number,
-                step_number=step_number
+                step_number=step_number,
+                remaining=remaining
             )
+            remaining -= 1
         return raw_observation, ship_simulated_step_memory
 
     def get_single_ship_move(
@@ -270,7 +280,8 @@ class HaliteAgent:
             raw_observation,
             ship_simulated_step_memory,
             step_number,
-            episode_number
+            episode_number,
+            remaining
     ):
         board = Board(
             raw_observation,
@@ -286,15 +297,15 @@ class HaliteAgent:
         converted_observation = self.env.wrap_observation_for_ship_agent(
             obs=Observation(board.observation),
             player=board.observation['player'],
+            remaining=remaining,
+            turn=step_number,
             spos=int(pos),
             uid=ship_id
         )
-        state_vector = converted_observation.flatten()
 
-        if self.ship_frame_stack_len > 1:
-            multiframe_state = self.env.get_multiframe_ship_observation(ship_id)
-            converted_obs = np.concatenate(multiframe_state, axis=0)
-            state_vector = converted_obs.flatten()
+        multiframe_state = self.env.get_multiframe_ship_observation(ship_id)
+        converted_obs = np.concatenate(multiframe_state, axis=0)
+        state_vector = converted_obs.flatten()
         if len(self.env.get_multiframe_ship_observation(ship_id)) == self.ship_frame_stack_len:
             action = self.ship_agent.get_action(
                 state_vector, step=step_number, game=episode_number

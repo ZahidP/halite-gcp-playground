@@ -49,7 +49,6 @@ class GameRunner:
 
     def play_episode(self, max_steps):
         raw_observation: dict = self.env.reset()[0].__dict__
-        print('Resetting env')
         raw_observation[
             'players'
         ][raw_observation['player']][0] = raw_observation['players'][raw_observation['player']][0] - self.handicap
@@ -102,14 +101,15 @@ class GameRunner:
         observation, game_reward, terminal = step_results
 
         if self.training:
-            self.halite_agent.learn(
-                observation=observation,
-                game_reward=game_reward,
-                terminal=terminal,
-                ship_simulated_step_memory=ship_simulated_step_memory,
-                shipyard_simulated_step_memory=shipyard_simulated_step_memory,
-                episode_number=self.episode_number,
-                step_number=self.step_number
-            )
+            if self.step_number >= self.ship_frame_stack_len:
+                self.halite_agent.learn(
+                    observation=observation,
+                    game_reward=game_reward,
+                    terminal=terminal,
+                    ship_simulated_step_memory=ship_simulated_step_memory,
+                    shipyard_simulated_step_memory=shipyard_simulated_step_memory,
+                    episode_number=self.episode_number,
+                    step_number=self.step_number
+                )
 
         return terminal, [item[0] for item in observation.players]

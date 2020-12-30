@@ -20,7 +20,7 @@ class ShipStateWrapper:
         self.obs = None
         self.max_frames = max_frames
         self.cached_ships_map, self.cached_shipyards_map = None, None
-        self.state_size = ((2 * radius + 1) ** 2) * 3
+        self.state_size = (((2 * radius + 1) ** 2) * 3 + 3) * max_frames
 
     def set_map_size(self, map_size):
         self.MAP_SIZE = map_size
@@ -99,7 +99,7 @@ class ShipStateWrapper:
 
         return entities_map
 
-    def get_basic_single_frame_complete_observation(self, obs, player: int, spos: int, uid=None) -> np.ndarray:
+    def get_basic_single_frame_map_observation(self, obs, player: int, spos: int, uid=None) -> np.ndarray:
         """
         Here we derive the converted state w.r.t a position and not a uid
         :param spos:
@@ -126,6 +126,26 @@ class ShipStateWrapper:
         r = self.radius
 
         result = state_map[y - r:y + r + 1, x - r:x + r + 1]
+
+        return result
+
+    def get_basic_single_frame_complete_observation(
+            self, obs: Observation, player: int, spos: int,  remaining, turn, uid=None) -> np.ndarray:
+        """
+        Here we derive the converted state w.r.t a position and not a uid
+        :param spos:
+        :param uid:
+        :return:
+        """
+        result = self.get_basic_single_frame_map_observation(obs, player, spos, uid)
+
+        player_halite = obs.players[obs.player][0]
+        remaining_ship_moves = remaining
+        turn = turn
+
+        result = result.flatten()
+
+        result = np.concatenate([result, [player_halite], [remaining_ship_moves], [turn]])
 
         # assuming this is pass by reference
         self.frame_history[uid].appendleft(result)

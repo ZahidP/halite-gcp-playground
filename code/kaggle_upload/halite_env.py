@@ -69,9 +69,9 @@ class HaliteEnv:
         terminal = terminal if terminal else 0
         return self.observation, reward, terminal
 
-    def wrap_observation_for_ship_agent(self, obs, player, uid, spos):
+    def wrap_observation_for_ship_agent(self, obs, player, remaining, turn, uid, spos):
         return self.ship_state_wrapper.get_basic_single_frame_complete_observation(
-            obs, player, spos, uid
+            obs, player, remaining, turn, spos, uid
         )
 
     def wrap_observation_for_shipyard_agent(self, obs, player, uid, spos):

@@ -29,6 +29,8 @@ def play_games(episodes, max_steps):
         max_frames=ship_frame_stack_len,
         map_size=int(env.configuration['size'])
     )
+    print('state size')
+    print(ship_state_wrapper.state_size)
 
     shipyard_state_wrapper = ShipYardStateWrapper(
         radius=4,
@@ -42,7 +44,7 @@ def play_games(episodes, max_steps):
 
     ship_agent = Agent(
         alpha=0.99, gamma=0.5, n_actions=6,
-        batch_size=32, epsilon=.9, input_dims=ship_state_wrapper.state_size * ship_frame_stack_len
+        batch_size=32, epsilon=.9, input_dims=ship_state_wrapper.state_size
     )
 
     shipyard_agent = Agent(
