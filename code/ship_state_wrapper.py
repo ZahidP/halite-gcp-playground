@@ -130,13 +130,17 @@ class ShipStateWrapper:
         return result
 
     def get_basic_single_frame_complete_observation(
-            self, obs: Observation, player: int, spos: int, remaining, turn, uid=None) -> np.ndarray:
+            self, obs: Observation, player: int, spos: int, remaining, turn, uid=None, map_size=None) -> np.ndarray:
         """
         Here we derive the converted state w.r.t a position and not a uid
         :param spos:
         :param uid:
         :return:
         """
+
+        if map_size:
+            self.MAP_SIZE = map_size
+
         result = self.get_basic_single_frame_map_observation(obs, player, spos, uid)
 
         player_halite = obs.players[obs.player][0]
