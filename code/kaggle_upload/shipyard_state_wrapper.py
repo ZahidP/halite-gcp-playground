@@ -49,9 +49,9 @@ class ShipYardStateWrapper:
                 row = ship_pos // self.MAP_SIZE
                 col = ship_pos % self.MAP_SIZE
                 if player != current_player:
-                    entities_map[row, col] = -halite if halite > 0 else -1
+                    entities_map[row, col] = -1
                 else:
-                    entities_map[row, col] = halite if halite > 0 else 1
+                    entities_map[row, col] = 1
         return entities_map
 
     def get_frame_shipyard_state_basic(self, obs, current_player):

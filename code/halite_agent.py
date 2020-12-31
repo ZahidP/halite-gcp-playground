@@ -1,9 +1,10 @@
 import numpy as np
-from kaggle_environments.envs.halite.helpers import Board, Observation
+from kaggle_environments.envs.halite.helpers import Board, Observation, ShipAction
 from shipyard_state_wrapper import ShipYardStateWrapper
 from ship_state_wrapper import ShipStateWrapper
 from halite_env import HaliteEnv
 from typing import Dict, Any
+
 
 class HaliteAgent:
 
@@ -39,7 +40,7 @@ class HaliteAgent:
         self.remaining = {}
 
     def __call__(
-        self, observation: Dict[str, Any], configuration: Dict[str, Any]
+            self, observation: Dict[str, Any], configuration: Dict[str, Any]
     ) -> Dict[Any, str]:
         raw_observation = observation
         step_observation = Observation(observation)
@@ -124,10 +125,17 @@ class HaliteAgent:
                     done=terminal
                 )
 
-                next_state_vector = converted_next_obs.flatten()
-                self.ship_agent.remember(state=s, action=a,
-                                         reward=ship_reward, new_state=next_state_vector, done=terminal)
-                self.ship_agent.learn(step_num=step_number, episode_num=episode_number)
+                if len(converted_next_obs) >= self.ship_frame_stack_len:
+                    next_state_vector = converted_next_obs.flatten()
+                    try:
+                        self.ship_agent.remember(state=s, action=a,
+                                                 reward=ship_reward, new_state=next_state_vector, done=terminal)
+                        self.ship_agent.learn(step_num=step_number, episode_num=episode_number)
+                    except Exception as e:
+                        print('shapes')
+                        print(s.shape)
+                        print(next_state_vector.shape)
+                        raise e
 
         for shipyard_id, val in shipyard_simulated_step_memory.items():
             s = val['state']
@@ -184,10 +192,18 @@ class HaliteAgent:
         state_vector = converted_observation.flatten()
         state_vector: np.ndarray = np.append(state_vector, is_occupied)
 
-        action = self.shipyard_agent.get_action(
-            state_vector, step=step_number, game=episode_number
-        )
-        halite_action = self.shipyard_state_wrapper.convert_action_to_enum(action, shipyard_id, observation)
+        player_state = step_observation.players[step_observation.player]
+
+        if len(player_state[2]) == 0 and player_state[0] > 500:
+            action = 1
+        else:
+            action = self.shipyard_agent.get_action(
+                state_vector, step=step_number, game=episode_number
+            )
+        halite_action = self.shipyard_state_wrapper.convert_action_to_enum(shipyard_id, observation, action)
+
+        if halite_action:
+            self.actions_for_step[shipyard_id] = halite_action.name
 
         """
         ============
@@ -198,7 +214,7 @@ class HaliteAgent:
 
         reward = self.env.get_shipyard_reward(
             obs_next,
-            self.env.wrap_observation_for_ship_agent(
+            self.env.wrap_observation_for_shipyard_agent(
                 obs=obs_next,
                 player=obs_next.player,
                 spos=pos,  # because shipyards can't move
@@ -235,6 +251,7 @@ class HaliteAgent:
             step_number
     ):
         shipyard_simulated_step_memory = {}
+
         for shipyard_id, (pos) in step_observation.players[step_observation.player][1].items():
             # modifies shipyard_simulated_step_memory object
             raw_observation = self.get_single_shipyard_move(
@@ -255,10 +272,18 @@ class HaliteAgent:
             episode_number,
             step_number,
     ):
-        remaining = len(step_observation.players[step_observation.player][2])
+
         ship_simulated_step_memory = {}
-        for ship_id, (pos, halite) in step_observation.players[step_observation.player][2].items():
+        remaining_ships = list(step_observation.players[step_observation.player][2].items())[:]  # make copy
+
+        while remaining_ships:
+            remaining = len(remaining_ships)
+            ship_id, (pos, halite) = remaining_ships.pop(0)
             # modifies ship_simulated_step_memory
+            if ship_id not in raw_observation['players'][raw_observation['player']][2].keys():
+                print(f'Ship {ship_id} most likely collided, skipping this portion')
+                continue
+
             raw_observation = self.get_single_ship_move(
                 ship_id=ship_id,
                 pos=pos,
@@ -269,7 +294,6 @@ class HaliteAgent:
                 step_number=step_number,
                 remaining=remaining
             )
-            remaining -= 1
         return raw_observation, ship_simulated_step_memory
 
     def get_single_ship_move(
@@ -294,7 +318,7 @@ class HaliteAgent:
         Take Action
         ============
         """
-        converted_observation = self.env.wrap_observation_for_ship_agent(
+        self.env.wrap_observation_for_ship_agent(
             obs=Observation(board.observation),
             player=board.observation['player'],
             remaining=remaining,
@@ -306,12 +330,16 @@ class HaliteAgent:
         multiframe_state = self.env.get_multiframe_ship_observation(ship_id)
         converted_obs = np.concatenate(multiframe_state, axis=0)
         state_vector = converted_obs.flatten()
-        if len(self.env.get_multiframe_ship_observation(ship_id)) == self.ship_frame_stack_len:
-            action = self.ship_agent.get_action(
-                state_vector, step=step_number, game=episode_number
-            )
+        if not len(observation.players[observation.player][1]) and \
+                (observation.players[observation.player][0] >= 500):
+            action = 4
         else:
-            action = np.random.randint(0, 6)
+            if len(self.env.get_multiframe_ship_observation(ship_id)) == self.ship_frame_stack_len:
+                action = self.ship_agent.get_action(
+                    state_vector, step=step_number, game=episode_number
+                )
+            else:
+                action = np.random.randint(0, 6)
 
         halite_action = self.env.convert_ship_action_to_halite_enum(action, observation)
 
@@ -328,11 +356,7 @@ class HaliteAgent:
         try:
             obs_next: Observation = self.env.update_observation_for_ship(board, ship_id, halite_action)
         except KeyError as e:
-            print('Actions taken')
-            print(self.actions_for_step)
-            print('Initial board and observation')
-            print(step_observation.players[step_observation.player])
-            raise e
+            print('Ship {} most likely collided with a friendly ship'.format(ship_id))
 
         # the ship may no longer exist...
         # ie it collided with an enemy ship or converted to a shipyard, we need to use the previous
@@ -346,7 +370,7 @@ class HaliteAgent:
         """
 
         # Update model
-        if self.training:
+        if self.training and len(multiframe_state) >= self.ship_frame_stack_len:
             ship_simulated_step_memory[ship_id] = {'state': state_vector, 'action': action, 'pos': pos}
         action_string = halite_action.name if halite_action else 'None'
 
@@ -355,5 +379,4 @@ class HaliteAgent:
                   f"reward received N/A | Player state {obs_next.players[observation.player]}")
         # update current observation with the simulated step ahead
         raw_observation = obs_next
-
         return raw_observation

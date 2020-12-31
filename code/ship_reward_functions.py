@@ -9,9 +9,9 @@ def win_loss_reward(observation):
     best_opponent_halite = sorted(opponent_halites, reverse=True)[0]
 
     if player_halite > best_opponent_halite:
-        return 10_000
+        return 1_000
     else:
-        return -10_000
+        return -1_000
 
 
 # assuming just a single state
@@ -102,7 +102,7 @@ def multi_frame_win_loss_ship_reward(
     return -1
 
 
-def multi_frame_convert_state_to_collector_ship_reward(
+def convert_state_to_collector_reward(
         observation: Observation,
         converted_observation,
         uid=None,
@@ -117,21 +117,66 @@ def multi_frame_convert_state_to_collector_ship_reward(
     if done:
         return win_loss_reward(observation)
 
-    player_halite = observation.players[observation.player][0]
-    # center ship is current ship
-    ship_state = converted_observation[:, :, 1]
-    cutoff_index = len(ship_state) // 2 + 1
-    prev_ship_state = ship_state[0:cutoff_index]
-    current_ship_state = ship_state[cutoff_index:]
+    current_frame = converted_observation[len(converted_observation) // 2:]
+    previous_frame = converted_observation[:len(converted_observation) // 2]
 
-    prev_ship_halite = prev_ship_state[len(prev_ship_state) // 2, len(prev_ship_state) // 2]
-    current_ship_halite = current_ship_state[len(current_ship_state) // 2, len(current_ship_state) // 2]
+    current_player_halite = current_frame[-3]
+    previous_player_halite = previous_frame[-3]
+    # center ship is current ship
+
+    current_frame_map_items = current_frame[:-3]
+    previous_frame_map_items = previous_frame[:-3]
+
+    map_state_divider = len(current_frame_map_items) // 3
+    current_frame_ship_items = current_frame_map_items[map_state_divider: map_state_divider * 2]
+    previous_frame_ship_items = previous_frame_map_items[map_state_divider: map_state_divider * 2]
+
+    current_ship_halite = current_frame_ship_items[len(current_frame_ship_items) // 2]
+    prev_ship_halite = previous_frame_ship_items[len(previous_frame_ship_items) // 2]
 
     reward = -20
 
-    if current_ship_halite > 600:
-        reward -= 40
+    accumulated_ship_halite = (current_ship_halite - prev_ship_halite)
 
-    reward = reward + (current_ship_halite - prev_ship_halite)
+    if accumulated_ship_halite > 600:
+        accumulated_ship_halite -= (current_ship_halite - 600)
 
-    return reward + player_halite
+    reward = reward + accumulated_ship_halite * 0.25 + (current_player_halite - previous_player_halite)
+
+    return reward
+
+
+def convert_state_to_total_halite_reward(
+        observation: Observation,
+        converted_observation,
+        uid=None,
+        done=False
+) -> float:
+    if done:
+        return win_loss_reward(observation) * 10
+
+    current_frame = converted_observation[len(converted_observation) // 2:]
+    previous_frame = converted_observation[:len(converted_observation) // 2]
+
+    current_player_halite = current_frame[-3]
+    previous_player_halite = previous_frame[-3]
+
+    return current_player_halite
+
+
+def convert_state_to_new_halite_reward(
+        observation: Observation,
+        converted_observation,
+        uid=None,
+        done=False
+) -> float:
+    if done:
+        return win_loss_reward(observation) * 10
+
+    current_frame = converted_observation[len(converted_observation) // 2:]
+    previous_frame = converted_observation[:len(converted_observation) // 2]
+
+    current_player_halite = current_frame[-3]
+    previous_player_halite = previous_frame[-3]
+
+    return current_player_halite - previous_player_halite

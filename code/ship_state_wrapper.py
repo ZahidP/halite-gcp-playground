@@ -130,7 +130,7 @@ class ShipStateWrapper:
         return result
 
     def get_basic_single_frame_complete_observation(
-            self, obs: Observation, player: int, spos: int,  remaining, turn, uid=None) -> np.ndarray:
+            self, obs: Observation, player: int, spos: int, remaining, turn, uid=None) -> np.ndarray:
         """
         Here we derive the converted state w.r.t a position and not a uid
         :param spos:

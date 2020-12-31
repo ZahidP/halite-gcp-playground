@@ -142,7 +142,7 @@ class Agent(object):
 
             self.chose_random = False
 
-            if verbose and ((game % 50) == 0):
+            if verbose and ((game % 10) == 0) and (step % 10 == 0):
                 print(f'Game: {game}, Step: {step}')
                 print('action values')
                 print(action_values)
@@ -169,7 +169,7 @@ class Agent(object):
 
         self.replace_target_network()
 
-        if verbose:
+        if verbose and ((episode_num % 10) == 0) and (step_num % 10 == 0):
             print('\n ================')
             print('learning - game: {}, iteration: {}'.format(episode_num, step_num))
             print('Mean reward: {}'.format(np.mean(self.memory.reward_memory)))
@@ -184,15 +184,12 @@ class Agent(object):
 
         # feed set of states through the model
 
-        if verbose:
+        if verbose and ((episode_num % 10) == 0) and (step_num % 10 == 0):
             print('Predicting q_target with input {}'.format(state.shape))
         q_network = self.q_offline.predict(state)
         if verbose:
             print('Predicting q_next with {}'.format(state.shape))
         q_next = self.q_offline.predict(new_state)
-
-        if verbose:
-            print('Copying')
 
         q_network = q_network.copy()
 
@@ -211,12 +208,12 @@ class Agent(object):
             print('batch index: {}'.format(batch_index))
             raise e
 
-        if verbose:
+        if verbose and ((episode_num % 10) == 0) and (step_num % 10 == 0):
             print('Updated q_target with shape: {}'.format(q_network.shape))
 
         self.q_online.train_on_batch(state, q_network)
 
-        if verbose:
+        if verbose and ((episode_num % 10) == 0) and (step_num % 10 == 0):
             print('Training complete')
 
         self.epsilon = self.epsilon * self.epsilon_dec if self.epsilon > self.epsilon_end \

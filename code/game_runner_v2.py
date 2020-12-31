@@ -53,30 +53,29 @@ class GameRunner:
             'players'
         ][raw_observation['player']][0] = raw_observation['players'][raw_observation['player']][0] - self.handicap
 
-        step_observation = Observation(raw_observation)
-        episode_score = []
+        episode_scores = []
 
-        print("Episode start")
-        print(raw_observation['players'])
+        if self.episode_number % 5 == 0:
+            print("Episode {}".format(self.episode_number))
+            print(raw_observation['players'])
 
         for step in range(max_steps):
             self.step_number = step
-            done, step_scores = self.play_step(
+            step_observation = Observation(raw_observation)
+            raw_observation, done, step_scores = self.play_step(
                 raw_observation=raw_observation,
                 step_observation=step_observation
             )
-            episode_score.append(step_scores)
+            episode_scores.append(step_scores)
             if done:
-                return episode_score
+                return episode_scores
         self.episode_number = 1 + self.episode_number
-        return episode_score
+        return episode_scores
 
     def play_step(self, raw_observation, step_observation):
         self.actions_for_step = {}
         self.shipyard_step_memory = {}
         self.ship_step_memory = {}
-
-        self.step_number += 1
 
         raw_observation, shipyard_simulated_step_memory = self.halite_agent.get_moves_for_all_shipyards(
             raw_observation=raw_observation,
@@ -93,15 +92,16 @@ class GameRunner:
         )
 
         env = self.env
-        actions_for_step = self.actions_for_step
+        for id_, action in self.halite_agent.actions_for_step.items():
+            self.actions_for_step[id_] = action
 
         # updates the env.observation
-        step_results = env.step(actions=actions_for_step)
+        step_results = env.step(actions=self.actions_for_step)
 
         observation, game_reward, terminal = step_results
 
         if self.training:
-            if self.step_number >= self.ship_frame_stack_len:
+            if self.step_number > self.ship_frame_stack_len:
                 self.halite_agent.learn(
                     observation=observation,
                     game_reward=game_reward,
@@ -112,4 +112,4 @@ class GameRunner:
                     step_number=self.step_number
                 )
 
-        return terminal, [item[0] for item in observation.players]
+        return observation, terminal, [item[0] for item in observation.players]

@@ -64,7 +64,8 @@ def play_games(episodes, max_steps):
         ship_state_wrapper=ship_state_wrapper,
         shipyard_state_wrapper=shipyard_state_wrapper,
         radius=4,
-        trainer=trainer
+        trainer=trainer,
+        ship_reward_type='total_halite'
     )
 
     game = GameRunner(

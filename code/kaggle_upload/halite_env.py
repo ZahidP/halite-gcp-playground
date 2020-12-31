@@ -6,7 +6,10 @@ from shipyard_state_wrapper import ShipYardStateWrapper
 from ship_reward_functions import \
     multi_frame_win_loss_ship_reward, \
     convert_state_to_reward, \
-    multi_frame_convert_state_to_collector_ship_reward
+    convert_state_to_collector_reward, convert_state_to_total_halite_reward
+
+from shipyard_reward_functions import \
+    convert_state_to_reward as convert_state_to_shipyard_reward
 
 
 class HaliteEnv:
@@ -18,6 +21,7 @@ class HaliteEnv:
                  agent_count=1,
                  radius=5,
                  trainer=None,
+                 ship_reward_type='basic',
                  configuration=None,
                  **kwargs):
         self.shipyard_state_wrapper = shipyard_state_wrapper
@@ -35,6 +39,7 @@ class HaliteEnv:
         self.radius = radius
         self.episode = 0
         self.step_number = 0
+        self.ship_reward_type = ship_reward_type
 
     @staticmethod
     def update_observation_for_ship(board: Board, uid, action):
@@ -86,11 +91,22 @@ class HaliteEnv:
     def convert_shipyard_action_to_halite_enum(self, action, uid, obs):
         return self.shipyard_state_wrapper.convert_action_to_enum(action=action, uid=uid, obs=obs)
 
-    def get_ship_reward(self, observation, converted_observation, uid, done) -> float:
-        return convert_state_to_reward(observation, converted_observation)
+    def get_ship_reward(self, observation, converted_observation, uid, done, reward_type=None) -> float:
+
+        if not reward_type:
+            reward_type = self.ship_reward_type
+
+        if reward_type == 'basic':
+            return convert_state_to_reward(observation, converted_observation)
+        elif reward_type == 'collector':
+            return convert_state_to_collector_reward(observation, converted_observation)
+        elif reward_type == 'total_halite':
+            return convert_state_to_total_halite_reward(observation, converted_observation)
+        else:
+            return convert_state_to_reward(observation, converted_observation)
 
     def get_shipyard_reward(self, observation, converted_observation, uid, done) -> float:
-        return self.shipyard_state_wrapper.convert_state_to_reward(observation, converted_observation)
+        return convert_state_to_shipyard_reward(observation, converted_observation)
 
     def get_multiframe_ship_reward(self, observation, converted_observation, uid, done) -> float:
         return multi_frame_win_loss_ship_reward(
