@@ -26,7 +26,7 @@ My next attempts will likely involve Actor-Critic or other gradient-based polici
 V1 was my initial attempt at running the training and analysis. It mainly involved uploading notebooks and code to the Kaggle compute environment.
 
 
-## Halite Reinforcement Learning on GCP
+## V2: Reinforcement Learning on GCP
 
 This portion of the repo is dedicated to training the Halite reinforcement learning agent on the Google Cloud Platform.
 

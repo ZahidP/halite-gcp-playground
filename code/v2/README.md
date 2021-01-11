@@ -9,5 +9,13 @@ This repo is based off of a combination of several GCP repositories/resources:
 - https://cloud.google.com/ai-platform/docs/getting-started-keras#train_your_model_locally
 - https://cloud.google.com/ai-platform/docs/getting-started-tensorflow-estimator
 
-### Notebooks
+### Code Structure
+
+A bulk of the code lives in the rl_on_gcp directory.
+
+- At the top level we have the `setup.py` file, the `requirements.txt`, and shell scripts.
+- The trainer/ directory contains everything needed to perform model training.
+- The main task is under trainer/task.py under `_run`
+
+This setup is in accordance with the best practices for packaging a GCP training application.
 
