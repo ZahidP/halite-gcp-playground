@@ -16,7 +16,7 @@ My approach was to use the Deep Q Learning algorithm.
 
 For those new to Deep-Q learning, this graphic encapsulates the process.
 
-https://miro.medium.com/max/1120/1*zKvQWW05zfSaCfSEHviayA.png
+![alt text](https://miro.medium.com/max/1120/1*zKvQWW05zfSaCfSEHviayA.png)
 
 Source: [https://medium.com/@karan_jakhar/100-days-of-code-day-4-6fbc672171e4]
 
