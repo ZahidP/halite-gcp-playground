@@ -2,11 +2,9 @@
 
 Halite is a game developed by TwoSigma where players must mine and collect "halite" and deposit their halite at shipyards.
 
-This project began when I stumbled upon this Kaggle competition.
-https://www.kaggle.com/c/halite-iv-playground-edition
+This project began when I stumbled upon this Kaggle competition: https://www.kaggle.com/c/halite-iv-playground-edition
 
-Earlier in the year another Halite competition was put forth. 
-https://www.kaggle.com/c/halite
+Earlier in the year another Halite competition was put forth: https://www.kaggle.com/c/halite
 
 There are various notebooks and write-ups on winning strategies but I wanted to attempt using a reinforcement learning strategy.
 
