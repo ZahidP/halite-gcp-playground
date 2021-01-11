@@ -2,3 +2,8 @@
 code/__pycache__/*
 code/*/__pycache__/*
 notebooks/.ipynb_checkpoints/*
+code/*/dqn_basic*
+code/v2/rl_on_gcp/dqn_basic_2020_01
+*.egg-info/
+*/logs
+code/v2/rl_on_gcp/my_model/

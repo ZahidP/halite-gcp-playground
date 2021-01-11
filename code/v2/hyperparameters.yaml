@@ -1,0 +1,46 @@
+# Creating a .yaml File
+trainingInput:
+  scaleTier: BASIC_GPU
+  hyperparameters:
+    maxTrials: 40
+    maxParallelTrials: 5
+    enableTrialEarlyStopping: False
+    goal: MAXIMIZE
+    hyperparameterMetricTag: SCORE
+    params:
+    - parameterName: update_target
+      type: INTEGER
+      minValue: 100
+      maxValue: 1000
+      scaleType: UNIT_LOG_SCALE
+    - parameterName: min_eps
+      type: DISCRETE
+      discreteValues:
+      - 0.05
+      - 0.1
+    - parameterName: learning_rate
+      type: DOUBLE
+      minValue: 0.00001
+      maxValue: 0.001
+      scaleType: UNIT_LOG_SCALE
+    - parameterName: batch_size
+      type: DISCRETE
+      discreteValues:
+      - 16
+      - 32
+      - 64
+      - 128
+    - parameterName: ship_reward_function
+      type: CATEGORICAL
+      categoricalValues:
+      - total_halite
+      - win_loss
+#      - delta_halite
+#      - custom
+#    - parameterName: shipyard_reward_function
+#      type: DISCRETE
+#      discreteValues:
+#      - total_halite
+#      - win_loss
+#      - ships
+#      - custom
